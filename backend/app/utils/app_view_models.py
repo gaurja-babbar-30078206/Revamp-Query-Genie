@@ -2,7 +2,7 @@ from utils.utils import embedding_llm_list, llm_list
 from langchain_ollama import ChatOllama
 from langchain_groq import ChatGroq
 import pandas as pd
-import streamlit as st
+# import streamlit as st
 from typing import List
 from langchain_core.output_parsers.json import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
