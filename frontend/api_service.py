@@ -136,3 +136,13 @@ async def get_comparison(input: dict):
     print(f"Download Model Status Code ::: {response.status_code}")
     print(f"Download Model Response :::{response.json()}")
     return response.json()
+
+
+async def get_chat_response(input: dict):
+    """Get chat responses"""
+    with httpx.stream(
+        method="GET", url=APIPaths.get_chat_response, json=input, timeout=6000
+    ) as r:
+        for chunk in r.iter_raw():
+            text_chunk = chunk.decode()  # Decode using default UTF-8
+            yield text_chunk  # Yield the decoded string

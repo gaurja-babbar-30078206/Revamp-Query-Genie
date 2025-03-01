@@ -13,3 +13,4 @@ class APIPaths:
     process_document = api_url + "process_documents/"
     get_theme_insights = api_url + "get_theme_insights/"
     get_comparison = api_url + "get_comparison/"
+    get_chat_response = api_url + "get_chat_response/"

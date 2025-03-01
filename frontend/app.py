@@ -22,6 +22,7 @@ from api_service import (
     save_documents,
     get_theme_insights,
     get_comparison,
+    get_chat_response,
 )
 
 st.set_page_config(page_title="Doc Insights & Comparision")
@@ -289,20 +290,13 @@ with tab2:
 # Chatbot Tab
 with tab3:
     st.title("Ask Your Questions")
-
+    uploaded_files_name = [file.name for file in st.session_state.uploaded_files]
     document_name = st.selectbox(
         "Select Document:",
-        list(st.session_state.retriever_dict.keys()),
+        list(uploaded_files_name),
         key="Chatbot Document Selection",
     )
     if document_name is not None:
-        # Merge all retrievers into one for the chatbot
-        retriever = st.session_state.retriever_dict[document_name]
-
-        st.session_state.chatbot_chain = create_chatbot_chain(
-            retriever, st.session_state.llm
-        )
-
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
@@ -313,26 +307,40 @@ with tab3:
         if query := st.chat_input("Enter your query"):  # Get user input
             # Check if the query is not empty
             if query:  #  Crucial check!
+
+                input = {
+                    "file_list": uploaded_files_name,
+                    "embed_llm": st.session_state.embed_llm.model,
+                    "llm": st.session_state.llm.model_name,
+                    "filename": document_name,
+                    "query": query,
+                }
+
                 with st.chat_message("user"):
                     st.markdown(query)
                 st.session_state.chat_history.append({"role": "user", "content": query})
-
+                response = ""
                 with st.chat_message("assistant"):
                     message_placeholder = st.empty()
-                    full_response = ""
+                    # full_response = ""
 
                     # Use the correct input key "query" (or adjust your chain to accept "question")
-                    for response in st.session_state.chatbot_chain.stream(
-                        {"query": query}
-                    ):
-                        # print("Response--------->",response,"<---------")
-                        full_response += response["result"]
-                        message_placeholder.markdown(full_response + " ")
-                    message_placeholder.markdown(full_response)
+                    # st.write(get_chat_response(input=input))
+                    st.write(get_chat_response(input=input))
+                    # for chunk in get_chat_response(input=input):
+                    #     print(chunk)
 
-                st.session_state.chat_history.append(
-                    {"role": "assistant", "content": full_response}
-                )
+                    # for response in st.session_state.chatbot_chain.stream(
+                    #     {"query": query}
+                    # ):
+                    #     # print("Response--------->",response,"<---------")
+                    # full_response += response
+                    # message_placeholder.markdown(full_response + " ")
+                message_placeholder.markdown(response)
+
+                # st.session_state.chat_history.append(
+                #     {"role": "assistant", "content": full_response}
+                # )
             else:  # Handle empty input
                 st.warning("Please enter a query.")  # More user-friendly message
     else:
