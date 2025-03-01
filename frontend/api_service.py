@@ -4,51 +4,8 @@ from fastapi import UploadFile, File
 from utils.api_path import APIPaths
 from utils.constants import blog
 from typing import List
-from langchain_community.vectorstores import FAISS
-
-from langchain.retrievers.document_compressors import DocumentCompressorPipeline
-from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
-from langchain.retrievers.merger_retriever import MergerRetriever
-from langchain_community.document_transformers import (
-    EmbeddingsRedundantFilter,
-    LongContextReorder,
-)
-from typing import List
-from config import VECTOR_STORE, UPLOAD_DIRECTORY
 
 # upload, create vector stores, save their retrievers, create get their jsons
-import os
-from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import (
-    UnstructuredPowerPointLoader,
-    PDFPlumberLoader,
-)
-from langchain.retrievers.document_compressors import DocumentCompressorPipeline
-from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
-from langchain.retrievers.merger_retriever import MergerRetriever
-from langchain_community.document_transformers import (
-    EmbeddingsRedundantFilter,
-    LongContextReorder,
-)
-from langchain.retrievers.document_compressors import DocumentCompressorPipeline
-from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
-from langchain.retrievers.merger_retriever import MergerRetriever
-from langchain_community.document_transformers import (
-    EmbeddingsRedundantFilter,
-    LongContextReorder,
-)
-
-import gensim
-from gensim import corpora
-from gensim.models import LdaModel
-from gensim.utils import simple_preprocess
-from nltk.corpus import stopwords
-from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import (
-    UnstructuredPowerPointLoader,
-    PDFPlumberLoader,
-)
-
 
 # post
 async def download_model(input_data: dict):

@@ -11,10 +11,10 @@ from app_side_bar_view_model import (
     get_llm_list,
     initialise_llm,
 )
-from app_view_models import (
-    ingest_multi_doc,
-    create_chatbot_chain,
-)
+# from app_view_models import (
+#     ingest_multi_doc,
+#     create_chatbot_chain,
+# )
 import pandas as pd
 from api_service import (
     download_model,
