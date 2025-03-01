@@ -1,4 +1,5 @@
 import os
+from langchain.chains import RetrievalQA
 from fastapi import APIRouter
 from models.models import Domain, ComparisonOutput1
 from typing_extensions import List
@@ -230,7 +231,7 @@ def process_documents(request: dict):
 
 
 ## get-insights
-def format_docs(docs, file_name):  # Add filename parameter
+def format_docs(docs, file_name=None):  # Add filename parameter
     return f"Information from '{file_name}':\n\n" + "\n\n".join(
         doc.page_content for doc in docs
     )
@@ -482,3 +483,32 @@ def get_detailed_comparison_chain1(request: dict):
         return response
     except Exception as e:
         return get_error_msg(err_msg="Error in Document comparison", error=str(e))
+
+
+## chat api
+def create_chatbot_chain(retriever, llm, query):
+    template = """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know.
+    {context}
+    Question: {question}"""
+    QA_PROMPT = PromptTemplate(
+        template=template, input_variables=["context", "question"]
+    )
+
+    context = format_docs(retriever.invoke(query))
+    qa_chain = QA_PROMPT | llm
+    for chunk in qa_chain.stream({"context": context, "question": query}):
+        yield chunk.content
+
+
+@router.get("/get_chat_response/")
+async def get_chat_response(request: dict):
+    embed_model = initialise_embed_llm(embed_llm=request["embed_llm"])
+    llm = initialise_llm(llm_name=request["llm"])
+    retriever_dict = get_retriever_dict(
+        file_list=request["file_list"], embed_model=embed_model
+    )
+    retriever = retriever_dict[request["filename"]]
+    return StreamingResponse(
+        create_chatbot_chain(llm=llm, retriever=retriever, query=request["query"]),
+        media_type="text/event-stream",
+    )
