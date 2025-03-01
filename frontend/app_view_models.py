@@ -366,30 +366,6 @@ def get_rag_chain(llm):
     return rag_chain
 
 
-def get_theme_insight(llm, retriever_dict, theme_name, subtheme_name, filename):
-    # item = insight_data['themes'][index]
-    theme = theme_name
-    sub_theme = subtheme_name
-
-    query = (
-        f"In detail tell me about {theme}, and the sub-themes {', '.join(sub_theme)}"
-    )
-
-    if filename not in retriever_dict:
-        raise ValueError(f"File '{filename}' not found in the retriever dictionary.")
-
-    retriever = retriever_dict[filename]
-
-    context = format_docs(retriever.invoke(query), file_name=filename)
-
-    rag_chain = get_rag_chain(llm=llm)
-
-    for chunk in rag_chain.stream(
-        {"theme": theme, "sub_themes": sub_theme, "context": context}
-    ):
-        yield chunk.content
-
-
 def get_context_with_page_number(context):
     doc_name = extract_document_name(context[0].metadata["file_path"])
     new_context = ""
@@ -432,67 +408,6 @@ class ComparisonOutput1(BaseModel):
     talking_points: list[dict] = Field(
         description="List of talking points, each with doc1 and doc2 perspectives."
     )
-
-
-def get_detailed_comparison_chain1(llm, theme, sub_theme, retriever_dict):
-    context_1, doc_1_name, context_2, doc_2_name = get_context(
-        retriever_dict=retriever_dict, theme=theme, sub_theme=sub_theme
-    )
-
-    output_parser = PydanticOutputParser(pydantic_object=ComparisonOutput1)
-
-    detailed_insight_prompt = PromptTemplate(
-        template="""
-        Compare two documents on a specific subtheme and extract comparable talking points.
-
-        **Main Theme:** {theme}
-        **Subtheme:** {sub_theme}
-
-        **Document 1: {doc_1_name}**
-        Content: {context_1}
-
-
-        **Document 2: {doc_2_name}**
-        Content: {context_2}
-
-
-        **Instructions:**
-
-        1. **Identify Talking Points:**  Find common themes or aspects discussed in both documents related to the subtheme. These will be your "talking points."
-
-        2. **Extract Perspectives:** For each talking point, summarize the perspective or key information presented in *both* documents.
-
-        3. **Structure Output:** Your output MUST adhere to the following JSON structure:
-        
-        {format_instructions}
-
-        """,
-        input_variables=[
-            "theme",
-            "sub_theme",
-            "context_1",
-            "context_2",
-            "doc_1_name",
-            "doc_2_name",
-        ],
-        partial_variables={
-            "format_instructions": output_parser.get_format_instructions()
-        },
-    )
-
-    comparison_chain = detailed_insight_prompt | llm | output_parser
-    output = comparison_chain.invoke(
-        {
-            "theme": theme,
-            "sub_theme": sub_theme,
-            "context_1": context_1,
-            "context_2": context_2,
-            "doc_1_name": doc_1_name,
-            "doc_2_name": doc_2_name,
-        }
-    )
-
-    return (output, doc_1_name, doc_2_name)
 
 
 def get_detailed_comparison_chain(llm, theme, sub_theme, retriever_dict):

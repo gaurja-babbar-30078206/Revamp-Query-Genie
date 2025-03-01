@@ -13,19 +13,19 @@ from app_side_bar_view_model import (
 )
 from app_view_models import (
     ingest_multi_doc,
-    get_theme_insight,
     create_chatbot_chain,
-    get_detailed_comparison_chain1,
 )
 import pandas as pd
 from api_service import (
     download_model,
     process_document,
     save_documents,
-    ingest_multi_doc,
+    get_theme_insights,
+    get_comparison,
 )
 
 st.set_page_config(page_title="Doc Insights & Comparision")
+
 # Custom CSS for background color
 st.markdown(
     """
@@ -63,6 +63,8 @@ if "domain" not in st.session_state:
     st.session_state.domain = None
 if "embed_llm_opn" not in st.session_state:
     st.session_state.embed_llm_opn = None
+if "uploaded_files" not in st.session_state:
+    st.session_state.uploaded_files = None
 
 
 st.sidebar.title("Options")
@@ -133,18 +135,22 @@ with st.sidebar:
     st.session_state.llm = initialise_llm(
         llm_source=st.session_state.llm_source, llm_opn=st.session_state.llm_opn
     )
-    uploaded_files = st.file_uploader(
+    st.session_state.uploaded_files = st.file_uploader(
         "Choose document(s)", accept_multiple_files=True, type=["pdf", "docx", "txt"]
     )
 
     # uploaded_files = st.file_uploader(...)
     if st.button("Process Documents"):
-        if uploaded_files:
+        if st.session_state.uploaded_files:
             with st.spinner("Processing documents..."):  # Add spinner here
 
                 # api to save documents
-                asyncio.run(save_documents(uploaded_files=uploaded_files))
-                uploaded_files_name = [file.name for file in uploaded_files]
+                asyncio.run(
+                    save_documents(uploaded_files=st.session_state.uploaded_files)
+                )
+                uploaded_files_name = [
+                    file.name for file in st.session_state.uploaded_files
+                ]
 
                 input = {
                     "uploaded_files": uploaded_files_name,
@@ -162,18 +168,6 @@ with st.sidebar:
                 st.session_state.insight_json_dict = data["insight_json_dict"]
                 st.session_state.key_insights_dict = data["key_insights_dict"]
                 st.session_state.pdf_compare_insights = data["pdf_compare_insights"]
-
-                # ingest
-                st.session_state.retriever_dict = ingest_multi_doc(
-                    file_list=uploaded_files_name,
-                    embed_model=st.session_state.embed_llm,
-                    embed_model_name=st.session_state.embed_model_name,
-                )
-
-                print("GOT RETRIEVER DICT >>")
-                print(st.session_state.retriever_dict)
-                print("GOT RETRIEVER DICT >>")
-                print("HELLO HELLO HELLO")
 
 
 tab1, tab2, tab3 = st.tabs(["Document Insights", "Document Comparison", "Chatbot"])
@@ -211,15 +205,20 @@ with tab1:
             selected_theme and selected_subtheme and st.session_state.get_insights
         ):  # Check get_insights flag
             with st.spinner("Generating insights..."):  # Added spinner
-                st.write(
-                    get_theme_insight(
-                        llm=st.session_state.llm,
-                        retriever_dict=st.session_state.retriever_dict,
-                        theme_name=selected_theme,
-                        subtheme_name=selected_subtheme,
-                        filename=document_name,
-                    )
-                )
+                uploaded_files_name = [
+                    file.name for file in st.session_state.uploaded_files
+                ]
+                input = {
+                    "file_list": uploaded_files_name,
+                    "theme_name": selected_theme,
+                    "subtheme_name": selected_subtheme,
+                    "filename": document_name,
+                    "embed_llm": st.session_state.embed_llm.model,
+                    "llm": st.session_state.llm.model_name,
+                }
+
+                st.write(get_theme_insights(input=input))
+                print("GAURJA BABBAR GAURJA BABBAR")
             st.session_state.get_insights = False  # Reset the flag
 
 # Doc Comparison Tab
@@ -251,24 +250,34 @@ with tab2:
 
         if selected_theme and selected_subtheme and st.session_state.compare_docs:
             with st.spinner("Comparing Documents..."):
-                data, doc_1_name, doc_2_name = get_detailed_comparison_chain1(
-                    llm=st.session_state.llm,
-                    theme=selected_theme,
-                    sub_theme=selected_subtheme,
-                    retriever_dict=st.session_state.retriever_dict,
-                )
+                uploaded_files_name = [
+                    file.name for file in st.session_state.uploaded_files
+                ]
+                input = {
+                    "file_list": uploaded_files_name,
+                    "theme_name": selected_theme,
+                    "subtheme_name": selected_subtheme,
+                    "embed_llm": st.session_state.embed_llm.model,
+                    "llm": st.session_state.llm.model_name,
+                }
+
+                response = asyncio.run(get_comparison(input=input))
+                print("FRONTEND RESPONSE >>")
+                print(response)
+                print("FRONTEND RESPONSE >>")
+
+                data = response["data"]["data"]
+                doc_1_name = response["data"]["doc_1_name"]
+                doc_2_name = response["data"]["doc_2_name"]
+
             print("Data--->", data)
-            df = pd.DataFrame(data.talking_points)
+            df = pd.DataFrame(data["talking_points"])
             df.columns = ["Aspects", doc_1_name, doc_2_name]
-            # df[doc_1_name] = df[doc_1_name].apply(lambda x: x['perspective'])
-            # df[doc_2_name] = df[doc_2_name].apply(lambda x: x['perspective'])
             print("Extracted Data---->", data)
             if data:
                 st.title(selected_subtheme.title())
-
                 st.header("Document Comparison")
                 st.write(df.to_markdown(index=False))
-                # col1, col2 = st.columns(2)
             st.session_state.compare_docs = False
     elif (
         st.session_state.insight_json_dict
@@ -281,53 +290,50 @@ with tab2:
 with tab3:
     st.title("Ask Your Questions")
 
-    if st.session_state.retriever_dict:  # Check if retrievers are available
-        document_name = st.selectbox(
-            "Select Document:",
-            list(st.session_state.retriever_dict.keys()),
-            key="Chatbot Document Selection",
+    document_name = st.selectbox(
+        "Select Document:",
+        list(st.session_state.retriever_dict.keys()),
+        key="Chatbot Document Selection",
+    )
+    if document_name is not None:
+        # Merge all retrievers into one for the chatbot
+        retriever = st.session_state.retriever_dict[document_name]
+
+        st.session_state.chatbot_chain = create_chatbot_chain(
+            retriever, st.session_state.llm
         )
-        if document_name is not None:
-            # Merge all retrievers into one for the chatbot
-            retriever = st.session_state.retriever_dict[document_name]
 
-            st.session_state.chatbot_chain = create_chatbot_chain(
-                retriever, st.session_state.llm
-            )
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = []
 
-            if "chat_history" not in st.session_state:
-                st.session_state.chat_history = []
+        for message in st.session_state.chat_history:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-            for message in st.session_state.chat_history:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+        if query := st.chat_input("Enter your query"):  # Get user input
+            # Check if the query is not empty
+            if query:  #  Crucial check!
+                with st.chat_message("user"):
+                    st.markdown(query)
+                st.session_state.chat_history.append({"role": "user", "content": query})
 
-            if query := st.chat_input("Enter your query"):  # Get user input
-                # Check if the query is not empty
-                if query:  #  Crucial check!
-                    with st.chat_message("user"):
-                        st.markdown(query)
-                    st.session_state.chat_history.append(
-                        {"role": "user", "content": query}
-                    )
+                with st.chat_message("assistant"):
+                    message_placeholder = st.empty()
+                    full_response = ""
 
-                    with st.chat_message("assistant"):
-                        message_placeholder = st.empty()
-                        full_response = ""
+                    # Use the correct input key "query" (or adjust your chain to accept "question")
+                    for response in st.session_state.chatbot_chain.stream(
+                        {"query": query}
+                    ):
+                        # print("Response--------->",response,"<---------")
+                        full_response += response["result"]
+                        message_placeholder.markdown(full_response + " ")
+                    message_placeholder.markdown(full_response)
 
-                        # Use the correct input key "query" (or adjust your chain to accept "question")
-                        for response in st.session_state.chatbot_chain.stream(
-                            {"query": query}
-                        ):
-                            # print("Response--------->",response,"<---------")
-                            full_response += response["result"]
-                            message_placeholder.markdown(full_response + " ")
-                        message_placeholder.markdown(full_response)
-
-                    st.session_state.chat_history.append(
-                        {"role": "assistant", "content": full_response}
-                    )
-                else:  # Handle empty input
-                    st.warning("Please enter a query.")  # More user-friendly message
-        else:
-            st.write("Please upload and process documents first.")  # Keep this message
+                st.session_state.chat_history.append(
+                    {"role": "assistant", "content": full_response}
+                )
+            else:  # Handle empty input
+                st.warning("Please enter a query.")  # More user-friendly message
+    else:
+        st.write("Please upload and process documents first.")  # Keep this message

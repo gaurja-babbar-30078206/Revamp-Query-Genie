@@ -1,3 +1,4 @@
+from utils.utils import embedding_llm_list, llm_list
 from langchain_ollama import ChatOllama
 from langchain_groq import ChatGroq
 import pandas as pd
@@ -724,17 +725,22 @@ def create_chatbot_chain(retriever, llm):
     return qa_chain
 
 
-def initialise_embed_llm(em_llm_opn: dict):
-    print(f"Model name ---> {em_llm_opn}")
-    if em_llm_opn["visible_name"] == "text-embedding-ada-002":
+def initialise_embed_llm(embed_llm: str):
+    embed_model = [
+        model for model in embedding_llm_list if model["visible_name"] == embed_llm
+    ][0]
+    print(f"Model name ---> {embed_model}")
+    if embed_model["visible_name"] == "text-embedding-ada-002":
         return get_gpt_embedding()
     else:
-        return HuggingFaceEmbeddings(model_name=em_llm_opn, show_progress=True)
+        return HuggingFaceEmbeddings(model_name=embed_llm, show_progress=True)
 
 
-def initialise_llm(llm_source: dict, llm_opn: dict):
-    print(f"Model name ---> {llm_opn}")
-    model = llm_opn
+def initialise_llm(llm_name):
+    llm = [model for model in llm_list if model["visible_name"] == llm_name][0]
+    print(f"Model name ---> {llm['visible_name']}")
+    model = llm["visible_name"]
+    llm_source = llm["info"]["source"]
     if llm_source == LLMSource.openai:
         return get_gpt_mini()
     elif llm_source == LLMSource.ollama:

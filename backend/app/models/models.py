@@ -159,3 +159,9 @@ class Domain(Enum):
     general = "General"
     finance = "Financial"
     biomedical = "BioMedical"
+
+
+class ComparisonOutput1(BaseModel):
+    talking_points: list[dict] = Field(
+        description="List of talking points, each with doc1 and doc2 perspectives."
+    )
