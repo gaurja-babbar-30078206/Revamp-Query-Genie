@@ -1,0 +1,8 @@
+# ignore extensions
+*.env
+*.yml
+*.yaml
+*.ipynb
+
+# ignore files and folders
+backend\app\index
