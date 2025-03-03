@@ -5,6 +5,6 @@
 *.ipynb
 
 # ignore files and folders
-backend/app/index/
-backend/app/index/uploads/
-backend/app/index/vector_store/
+app/index/
+app/index/uploads/
+app/index/vector_store/

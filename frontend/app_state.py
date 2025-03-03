@@ -41,17 +41,17 @@ class InsigthAppState:
         if "isChat" not in st.session_state:
             st.session_state.isChat = False
 
-    def init_folders(self):
-        blog("Creating neccessary folders!")
+    # def init_folders(self):
+    #     blog("Creating neccessary folders!")
 
-        if not Path(INDEX).exists():
-            Path.mkdir(INDEX)
+    #     if not Path(INDEX).exists():
+    #         Path.mkdir(INDEX)
 
-        if not Path(VECTOR_STORE).exists():
-            Path.mkdir(VECTOR_STORE)
+    #     if not Path(VECTOR_STORE).exists():
+    #         Path.mkdir(VECTOR_STORE)
 
-        if not Path(JSON_STORE).exists():
-            Path.mkdir(JSON_STORE)
+    #     if not Path(JSON_STORE).exists():
+    #         Path.mkdir(JSON_STORE)
 
 
 class ComparisonAppState:
