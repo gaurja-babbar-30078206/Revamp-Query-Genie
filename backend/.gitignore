@@ -6,3 +6,5 @@
 
 # ignore files and folders
 backend/app/index/
+backend/app/index/uploads/
+backend/app/index/vector_store/
