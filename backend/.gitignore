@@ -5,4 +5,4 @@
 *.ipynb
 
 # ignore files and folders
-backend\app\index
+backend/app/index/

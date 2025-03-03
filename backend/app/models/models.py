@@ -116,18 +116,6 @@ class Models:
         self.info = info
 
 
-# class Models:
-#     def __init__(self, visible_name=None, info=None):
-#         self.visible_name = visible_name
-#         self.info = info
-
-#     def __hash__(self):
-#         return hash((self.visible_name, frozenset(self.info.items()) if self.info else None))
-
-#     def __eq__(self, other):
-#         return (self.visible_name, self.info) == (other.visible_name, other.info)
-
-
 ## Models
 class LLM(Enum):
     gpt = "gpt"

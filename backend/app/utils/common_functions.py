@@ -1,26 +1,31 @@
+import os
+import yaml
+from dotenv import load_dotenv, find_dotenv
 from langchain_openai import AzureChatOpenAI
 
-AZURE_MODEL_DEPLOYMENT_ID = "agelgpt4o"
-AZURE_OPENAI_API_KEY = "05bb0956ad57473d95900e3981288554"
-AZURE_OPENAI_EMBED_API_KEY = "07a2db3305d14f619202c549ca81b0d2"
-AZURE_OPENAI_ENDPOINT = "https://ailabazopenaius.openai.azure.com/"
-AZURE_API_VERSION = "2024-02-15-preview"
-AZURE_MODEL_NAME = "gpt-4o-mini"
-AZURE_MODEL_DEPLOYMENT_ID = "agelgpt4o"
-AZURE_EMBEDDING_DEPLOYMENT_ID = "ailabtxtembada"
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+config_file_path = os.path.join(root_dir, "config.yml")
+
+## loading config
+with open(config_file_path, "r") as yamlfile:
+    config = yaml.load(stream=yamlfile, Loader=yaml.Loader)
+
+print("CONFIG KEYS >>")
+print(config.keys())
+
+
+load_dotenv(find_dotenv())
+
+AZURE_MODEL_DEPLOYMENT_ID = os.environ["AZURE_MODEL_DEPLOYMENT_ID"]
+AZURE_OPENAI_API_KEY = os.environ["AZURE_OPENAI_API_KEY"]
+AZURE_OPENAI_ENDPOINT = os.environ["AZURE_OPENAI_ENDPOINT"]
+AZURE_API_VERSION = os.environ["AZURE_API_VERSION"]
+AZURE_MODEL_NAME = os.environ["AZURE_MODEL_NAME"]
+CONTEXT_LENGTH = 10000
 
 
 # llm
 def get_gpt_mini():
-
-    AZURE_MODEL_DEPLOYMENT_ID = "agelgpt4o"
-    AZURE_OPENAI_API_KEY = "05bb0956ad57473d95900e3981288554"
-    AZURE_OPENAI_EMBED_API_KEY = "07a2db3305d14f619202c549ca81b0d2"
-    AZURE_OPENAI_ENDPOINT = "https://ailabazopenaius.openai.azure.com/"
-    AZURE_API_VERSION = "2024-02-15-preview"
-    AZURE_MODEL_NAME = "gpt-4o-mini"
-    AZURE_MODEL_DEPLOYMENT_ID = "agelgpt4o"
-    AZURE_EMBEDDING_DEPLOYMENT_ID = "ailabtxtembada"
     # Initialize LLM and embedding model
     llm = AzureChatOpenAI(
         model=AZURE_MODEL_NAME,
@@ -49,3 +54,24 @@ def get_gpt_embedding():
         show_progress_bar=True,
     )
     return embeddings
+
+
+def init_folders():
+    """Creation of required folders"""
+    print("Creating neccessary folders!")
+    index = config["index"]
+    vector_store = config["vector_store"]
+    json_store = config["json_store"]
+    upload_directory = config["upload_directory"]
+
+    if not os.path.exists(index):
+        os.mkdir(index)
+
+    if not os.path.exists(vector_store):
+        os.mkdir(vector_store)
+
+    if not os.path.exists(json_store):
+        os.mkdir(json_store)
+
+    if not os.path.exists(upload_directory):
+        os.mkdir(upload_directory)

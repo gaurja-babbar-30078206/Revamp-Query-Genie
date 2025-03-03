@@ -8,7 +8,7 @@ from config import INDEX, VECTOR_STORE, JSON_STORE
 # App state for Insights
 class InsigthAppState:
     def __init__(self):
-        self.init_folders()
+        # self.init_folders()
 
         if "llm" not in st.session_state:
             st.session_state.llm = get_gpt_mini()

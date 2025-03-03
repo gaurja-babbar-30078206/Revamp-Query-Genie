@@ -1,10 +1,11 @@
 import os
+import yaml
+
 from langchain.chains import RetrievalQA
 from fastapi import APIRouter
 from models.models import Domain, ComparisonOutput1
 from typing_extensions import List
 from typing_extensions import Any
-from config import UPLOAD_DIRECTORY
 from utils.constants import Constants
 from dependency_injector.wiring import inject
 from fastapi import HTTPException, UploadFile, File
@@ -41,16 +42,33 @@ from langchain_community.document_transformers import (
     EmbeddingsRedundantFilter,
     LongContextReorder,
 )
-from config import VECTOR_STORE, UPLOAD_DIRECTORY
 from langchain_core.output_parsers import PydanticOutputParser
 
-router = APIRouter()
-os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+config_file_path = os.path.join(root_dir, "config.yml")
+
+## loading config
+with open(config_file_path, "r") as yamlfile:
+    config = yaml.load(stream=yamlfile, Loader=yaml.Loader)
+
+
+## load from config
+index = os.path.join(root_dir, config["index"])
+vector_store = os.path.join(root_dir, config["vector_store"])
+upload_directory = os.path.join(root_dir, config["upload_directory"])
+
+# creating required folders
+os.makedirs(index, exist_ok=True)
+os.makedirs(vector_store, exist_ok=True)
+os.makedirs(upload_directory, exist_ok=True)
 
 ## variables
 llm = None
 embed_model = None
 retriever_dict = {}
+
+router = APIRouter()
 
 
 ## functions
@@ -130,8 +148,12 @@ async def save_documents(files: List[UploadFile] = File(...)):
         for file in files:
             unique_filename = file.filename
 
-            file_path = os.path.join(UPLOAD_DIRECTORY, unique_filename)
+            file_path = os.path.join(upload_directory, unique_filename)
 
+            print("GAURJA >>")
+            print(os.path.exists(file_path))
+            print(upload_directory)
+            print(unique_filename)
             with open(file_path, "wb") as f:
                 content = await file.read()  # Async read
                 f.write(content)
@@ -157,77 +179,77 @@ def process_documents(request: dict):
     print(request)
     print("Input map >>")
     if request:
-        try:
-            ## get only the names of the uploaded files
-            uploaded_files = request["uploaded_files"]
-            embed_model_name = request["embed_model_name"]
-            embed_model = initialise_embed_llm(embed_llm=request["embed_llm"])
-            llm = initialise_llm(llm_name=request["llm"])
+        # try:
+        ## get only the names of the uploaded files
+        uploaded_files = request["uploaded_files"]
+        embed_model_name = request["embed_model_name"]
+        embed_model = initialise_embed_llm(embed_llm=request["embed_llm"])
+        llm = initialise_llm(llm_name=request["llm"])
 
-            print("PROCESS DOCUMENTS >>>")
-            print(uploaded_files)
-            print(embed_model)
-            print(llm)
-            print(embed_model_name)
-            print("PROCESS DOCUMENTS >>>")
+        print("PROCESS DOCUMENTS >>>")
+        print(uploaded_files)
+        print(embed_model)
+        print(llm)
+        print(embed_model_name)
+        print("PROCESS DOCUMENTS >>>")
 
-            insight_json_dict = ingest_multi_doc(
-                uploaded_files, embed_model, embed_model_name
-            )
+        insight_json_dict = ingest_multi_doc(
+            uploaded_files, embed_model, embed_model_name, upload_directory
+        )
 
-            print("Insight dict >>>>")
-            print(insight_json_dict)
+        print("Insight dict >>>>")
+        print(insight_json_dict)
 
-            key_insights_dict = {}
-            if insight_json_dict:
-                for key, value in insight_json_dict.items():
-                    key_insights_dict[key] = topics_from_pdf(
-                        llm=llm, list_topics=value, doc_name=key
-                    )
-
-            if len(insight_json_dict) >= 2:  # Ensure there are at least two documents
-                # Get the first two items from the dictionary
-                items = list(insight_json_dict.items())
-                file1_name, file1_topics = items[0]
-                file2_name, file2_topics = items[1]
-
-                pdf_compare_insights = topics_from_pdf_compare(
-                    list_of_topics_doc1=file1_topics,
-                    list_of_topics_doc2=file2_topics,
-                    document1=file1_name,
-                    document2=file2_name,
-                    llm=llm,
+        key_insights_dict = {}
+        if insight_json_dict:
+            for key, value in insight_json_dict.items():
+                key_insights_dict[key] = topics_from_pdf(
+                    llm=llm, list_topics=value, doc_name=key
                 )
-            else:
-                pdf_compare_insights = None  # Or handle the case where there are fewer than 2 docs appropriately
 
-            print("Process documents results >>")
-            print(
-                insight_json_dict,
-                key_insights_dict,
-                pdf_compare_insights,
+        if len(insight_json_dict) >= 2:  # Ensure there are at least two documents
+            # Get the first two items from the dictionary
+            items = list(insight_json_dict.items())
+            file1_name, file1_topics = items[0]
+            file2_name, file2_topics = items[1]
+
+            pdf_compare_insights = topics_from_pdf_compare(
+                list_of_topics_doc1=file1_topics,
+                list_of_topics_doc2=file2_topics,
+                document1=file1_name,
+                document2=file2_name,
+                llm=llm,
             )
-            print("Process documents results >>")
+        else:
+            pdf_compare_insights = None  # Or handle the case where there are fewer than 2 docs appropriately
 
-            data = {
-                "insight_json_dict": insight_json_dict,
-                "key_insights_dict": key_insights_dict,
-                "pdf_compare_insights": pdf_compare_insights,
-            }
+        print("Process documents results >>")
+        print(
+            insight_json_dict,
+            key_insights_dict,
+            pdf_compare_insights,
+        )
+        print("Process documents results >>")
 
-            ## Issue is that retriever dict contains objects and not json
+        data = {
+            "insight_json_dict": insight_json_dict,
+            "key_insights_dict": key_insights_dict,
+            "pdf_compare_insights": pdf_compare_insights,
+        }
 
-            response = {
-                "status": Constants.success,
-                "data": data,
-                "message": Constants.documents_processed_successful,
-            }
+        ## Issue is that retriever dict contains objects and not json
 
-            return response
-        except Exception as e:
-            return get_error_msg(err_msg="Document processing failed", error=e)
-    else:
-        return get_error_msg(err_msg="Input Empty", error="")
+        response = {
+            "status": Constants.success,
+            "data": data,
+            "message": Constants.documents_processed_successful,
+        }
+
+        return response
+    #     except Exception as e:
+    #         return get_error_msg(err_msg="Document processing failed", error=e)
+    # else:
+    #     return get_error_msg(err_msg="Input Empty", error="")
 
 
 ## get-insights
@@ -240,9 +262,9 @@ def format_docs(docs, file_name=None):  # Add filename parameter
 def get_rag_chain(llm):
     insight_temp = """
     <instruction>
-    You are an expert business insights analyst.  
-    You will be provided with a theme and a sub-theme within that theme. 
-    Your task is to analyze the provided context and extract the most informative insights related to the given sub-theme.  
+    You are an expert business insights analyst.
+    You will be provided with a theme and a sub-theme within that theme.
+    Your task is to analyze the provided context and extract the most informative insights related to the given sub-theme.
     Your insights should be specific, quantifiable whenever possible. Prioritize insights that has more importance
     </instruction>
 
@@ -304,12 +326,12 @@ def return_multi_retriever(db, embed_model):
 
 def get_retriever_dict(file_list, embed_model):
     for uploaded_file in file_list:
-        path = rf"{os.path.join(UPLOAD_DIRECTORY, uploaded_file)}"
+        path = rf"{os.path.join(upload_directory, uploaded_file)}"
         file_name = os.path.basename(path)
         file_name_without_ext = os.path.splitext(file_name)[
             0
         ]  # Get filename without extension
-        vec_path = os.path.join(VECTOR_STORE, file_name, embed_model.model)
+        vec_path = os.path.join(vector_store, file_name, embed_model.model)
 
         ## creating jsons
         docs = return_documents(path)
@@ -444,7 +466,7 @@ def get_detailed_comparison_chain1(request: dict):
             2. **Extract Perspectives:** For each talking point, summarize the perspective or key information presented in *both* documents.
 
             3. **Structure Output:** Your output MUST adhere to the following JSON structure:
-            
+
             {format_instructions}
 
             """,

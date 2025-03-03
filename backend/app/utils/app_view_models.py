@@ -2,6 +2,7 @@ from utils.utils import embedding_llm_list, llm_list
 from langchain_ollama import ChatOllama
 from langchain_groq import ChatGroq
 import pandas as pd
+
 # import streamlit as st
 from typing import List
 from langchain_core.output_parsers.json import JsonOutputParser
@@ -53,11 +54,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import (
     UnstructuredPowerPointLoader,
     PDFPlumberLoader,
-    UnstructuredURLLoader,
 )
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from config import UPLOAD_DIRECTORY
-
 from utils.common_functions import get_gpt_mini, get_gpt_embedding
 from langchain_huggingface import HuggingFaceEmbeddings
 from models.models import LLMSource
@@ -120,13 +117,13 @@ def return_multi_retriever(db, embed_model):
     return compression_retriever
 
 
-def ingest_multi_doc(file_list, embed_model, embed_model_name):
+def ingest_multi_doc(file_list, embed_model, embed_model_name, upload_path):
     insight_json_dict = {}
 
     print("File list --> ")
 
     for uploaded_file in file_list:
-        path = rf"{os.path.join(UPLOAD_DIRECTORY, uploaded_file)}"
+        path = rf"{os.path.join(upload_path, uploaded_file)}"
         file_name = os.path.basename(path)
         file_name_without_ext = os.path.splitext(file_name)[
             0
