@@ -723,21 +723,18 @@ def initialise_embed_llm(embed_llm: str):
 
 def initialise_llm(llm_name):
     llm = [model for model in llm_list if model["visible_name"] == llm_name][0]
-    print(f"Model name ---> {llm['visible_name']}")
     model = llm["visible_name"]
     llm_source = llm["info"]["source"]
-    if llm_source == LLMSource.openai:
+    
+    if llm_source == LLMSource.openai.value:
         return get_gpt_mini(), model
-    elif llm_source == LLMSource.ollama:
+    elif llm_source == LLMSource.ollama.value:
         return ChatOllama(model=model, temperature=0), model
-    elif llm_source == LLMSource.chatgroq:
-        return (
-            ChatGroq(
+    elif llm_source == LLMSource.chatgroq.value:
+        return ChatGroq(
                 model=model,
                 temperature=0,
                 max_tokens=None,
                 timeout=None,
                 max_retries=2,
-            ),
-            model,
-        )
+            ),model

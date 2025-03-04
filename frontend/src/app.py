@@ -34,7 +34,7 @@ st.markdown(
 st.sidebar.title("Options")
 
 
-#app state
+# app state
 if "init" not in st.session_state:
     st.session_state.init = False
 if "insight_json_dict" not in st.session_state:
@@ -98,10 +98,16 @@ with st.sidebar:
     )
 
     if st.session_state.domain:
+        filtered_list = [
+            item
+            for item in st.session_state.em_llm_list
+            if item["info"]["domain"] == st.session_state.domain.value
+        ]
+
         st.session_state.embed_llm_opn = st.selectbox(
             label="Embed LLM",
             placeholder="Choose an embed LLM",
-            options=st.session_state.em_llm_list,
+            options=filtered_list,
             format_func=lambda x: x["visible_name"],
             key="embed_llm_selectbox",  # Add a key for the selectbox
         )
@@ -121,27 +127,33 @@ with st.sidebar:
                 ]
                 print("embed_model_option--->", st.session_state.embed_model_name)
 
-    st.session_state.embed_model_input = st.text_input(
-        "Download your own embedding model: 👇 "
-    )
-    if st.session_state.embed_model_input:
-        if source := st.radio("Source", options=["hf", "🦙"], horizontal=True):
-            # download_embed_model(model_name=st.session_state.embed_model_input, source=source)
-            input = {"model_name": st.session_state.embed_model_input, "source": source}
-            asyncio.run(download_model(input_data=input))
+    # Download model functionality -- Do not delete
+    # st.session_state.embed_model_input = st.text_input(
+    #     "Download your own embedding model: 👇 "
+    # )
+    # if st.session_state.embed_model_input:
+    #     if source := st.radio("Source", options=["hf", "🦙"], horizontal=True):
+    #         input = {"model_name": st.session_state.embed_model_input, "source": source}
+    #         asyncio.run(download_model(input_data=input))
+    # Download model functionality -- Do not delete
 
     st.session_state.llm_source = st.selectbox(
         label="LLM Source", options=LLMSource, format_func=lambda x: x.value
     )
 
-    # if st.session_state.llm_source:
-    st.session_state.llm_opn = st.selectbox(
-        label="LLM",
-        placeholder="Choose an LLM",
-        options=st.session_state.llm_list,
-        format_func=lambda x: x["visible_name"],
-    )
-    st.session_state.llm = st.session_state.llm_opn["visible_name"]
+    if st.session_state.llm_source:
+        filtered_list = [
+            item
+            for item in st.session_state.llm_list
+            if item["info"]["source"] == st.session_state.llm_source.value
+        ]
+        st.session_state.llm_opn = st.selectbox(
+            label="LLM",
+            placeholder="Choose an LLM",
+            options=filtered_list,
+            format_func=lambda x: x["visible_name"],
+        )
+        st.session_state.llm = st.session_state.llm_opn["visible_name"]
 
     st.session_state.uploaded_files = st.file_uploader(
         "Choose document(s)", accept_multiple_files=True, type=["pdf", "docx", "txt"]

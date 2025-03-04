@@ -32,7 +32,7 @@ class DataType(Enum):
 
 class LLMSource(Enum):
     openai = "Openai"
-    ollama = "Ollama"
+    # ollama = "Ollama"
     chatgroq = "Chatgroq"
 
 

@@ -1,6 +1,5 @@
 # ignore extensions
 *.env
-*.yml
 *.yaml
 *.ipynb
 
