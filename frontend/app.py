@@ -1,22 +1,13 @@
 import sys
-import json
 import asyncio
+import pandas as pd
 
 sys.path.append(".")
 import streamlit as st
-from app_models import DataType, LLMSource, Domain
-from app_side_bar_view_model import (
-    get_embed_llm_list,
-    initialise_embed_llm,
-    get_llm_list,
-    initialise_llm,
-)
-# from app_view_models import (
-#     ingest_multi_doc,
-#     create_chatbot_chain,
-# )
-import pandas as pd
-from api_service import (
+from models import DataType, LLMSource, Domain
+from state import *
+from router import (
+    init,
     download_model,
     process_document,
     save_documents,
@@ -39,36 +30,18 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Initialize session state variables if they don't exist
-if "insight_json_dict" not in st.session_state:
-    st.session_state.insight_json_dict = {}
-if "key_insights_dict" not in st.session_state:
-    st.session_state.key_insights_dict = {}
-if "pdf_compare_insights" not in st.session_state:
-    st.session_state.pdf_compare_insights = {}
-if "retriever_dict" not in st.session_state:
-    st.session_state.retriever_dict = {}
-if "selected_theme_ins" not in st.session_state:
-    st.session_state.selected_theme_ins = None
-if "selected_subtheme_ins" not in st.session_state:
-    st.session_state.selected_subtheme_ins = None
-if "get_insights" not in st.session_state:
-    st.session_state.get_insights = False
-if "compare_docs" not in st.session_state:
-    st.session_state.compare_docs = False
-if "final_comp_json" not in st.session_state:
-    st.session_state.final_comp_json = None
-if "embed_model_name" not in st.session_state:
-    st.session_state.embed_model_name = None
-if "domain" not in st.session_state:
-    st.session_state.domain = None
-if "embed_llm_opn" not in st.session_state:
-    st.session_state.embed_llm_opn = None
-if "uploaded_files" not in st.session_state:
-    st.session_state.uploaded_files = None
-
 
 st.sidebar.title("Options")
+
+# init api which will fill the lists of llm and emb
+if not st.session_state.init:
+    init_response = asyncio.run(init())
+    st.session_state.llm = init_response["llm"]
+    st.session_state.embed_llm = init_response["embed_model"]
+    st.session_state.em_llm_list = init_response["embeddings"]
+    st.session_state.llm_list = init_response["models"]
+    st.session_state.init = True
+
 # Sidebar options (Data, Embedding, LLM, Document Upload)
 with st.sidebar:
     st.session_state.data_type = st.selectbox(
@@ -88,12 +61,11 @@ with st.sidebar:
     )
 
     if st.session_state.domain:
-        em_llm_list = get_embed_llm_list(em_llm_source=st.session_state.domain)
         st.session_state.embed_llm_opn = st.selectbox(
             label="Embed LLM",
             placeholder="Choose an embed LLM",
-            options=em_llm_list,
-            format_func=lambda x: x.visible_name,
+            options=st.session_state.em_llm_list,
+            format_func=lambda x: x["visible_name"],
             key="embed_llm_selectbox",  # Add a key for the selectbox
         )
 
@@ -104,11 +76,12 @@ with st.sidebar:
                 or st.session_state.embed_llm is None
                 or st.session_state.embed_model_name is None
             ):
-                st.session_state.embed_llm, st.session_state.embed_model_name = (
-                    initialise_embed_llm(
-                        em_llm_opn=st.session_state.embed_llm_opn.visible_name
-                    )
-                )
+                st.session_state.embed_llm = st.session_state.embed_llm_opn[
+                    "visible_name"
+                ]
+                st.session_state.embed_model_name = st.session_state.embed_llm_opn[
+                    "visible_name"
+                ]
                 print("embed_model_option--->", st.session_state.embed_model_name)
 
     st.session_state.embed_model_input = st.text_input(
@@ -124,28 +97,22 @@ with st.sidebar:
         label="LLM Source", options=LLMSource, format_func=lambda x: x.value
     )
 
-    if st.session_state.llm_source:
-
-        llm_list = get_llm_list(st.session_state.llm_source)
+    # if st.session_state.llm_source:
     st.session_state.llm_opn = st.selectbox(
         label="LLM",
         placeholder="Choose an LLM",
-        options=llm_list,
-        format_func=lambda x: x.visible_name,
+        options=st.session_state.llm_list,
+        format_func=lambda x: x["visible_name"],
     )
-    st.session_state.llm = initialise_llm(
-        llm_source=st.session_state.llm_source, llm_opn=st.session_state.llm_opn
-    )
+    st.session_state.llm = st.session_state.llm_opn["visible_name"]
+
     st.session_state.uploaded_files = st.file_uploader(
         "Choose document(s)", accept_multiple_files=True, type=["pdf", "docx", "txt"]
     )
 
-    # uploaded_files = st.file_uploader(...)
     if st.button("Process Documents"):
         if st.session_state.uploaded_files:
-            with st.spinner("Processing documents..."):  # Add spinner here
-
-                # api to save documents
+            with st.spinner("Processing documents..."):
                 asyncio.run(
                     save_documents(uploaded_files=st.session_state.uploaded_files)
                 )
@@ -155,17 +122,13 @@ with st.sidebar:
 
                 input = {
                     "uploaded_files": uploaded_files_name,
-                    "embed_llm": st.session_state.embed_llm.model,
-                    "llm": st.session_state.llm.model_name,
+                    "embed_llm": st.session_state.embed_llm,
+                    "llm": st.session_state.llm,
                     "embed_model_name": st.session_state.embed_model_name,
                 }
-                print(f"Uploaded files >> {uploaded_files_name}")
-                print(f"LLM LLM >> {st.session_state.llm.model_name}")
-                print(f"Embedding LLM >> {st.session_state.embed_llm.model}")
 
                 response = asyncio.run(process_document(input_data=input))
                 data = response["data"]
-
                 st.session_state.insight_json_dict = data["insight_json_dict"]
                 st.session_state.key_insights_dict = data["key_insights_dict"]
                 st.session_state.pdf_compare_insights = data["pdf_compare_insights"]
@@ -214,16 +177,14 @@ with tab1:
                     "theme_name": selected_theme,
                     "subtheme_name": selected_subtheme,
                     "filename": document_name,
-                    "embed_llm": st.session_state.embed_llm.model,
-                    "llm": st.session_state.llm.model_name,
+                    "embed_llm": st.session_state.embed_llm,
+                    "llm": st.session_state.llm,
                 }
 
                 st.write(get_theme_insights(input=input))
-                print("GAURJA BABBAR GAURJA BABBAR")
             st.session_state.get_insights = False  # Reset the flag
 
 # Doc Comparison Tab
-
 with tab2:
     st.title("Document Comparison")
 
@@ -258,8 +219,8 @@ with tab2:
                     "file_list": uploaded_files_name,
                     "theme_name": selected_theme,
                     "subtheme_name": selected_subtheme,
-                    "embed_llm": st.session_state.embed_llm.model,
-                    "llm": st.session_state.llm.model_name,
+                    "embed_llm": st.session_state.embed_llm,
+                    "llm": st.session_state.llm,
                 }
 
                 response = asyncio.run(get_comparison(input=input))
@@ -310,8 +271,8 @@ with tab3:
 
                 input = {
                     "file_list": uploaded_files_name,
-                    "embed_llm": st.session_state.embed_llm.model,
-                    "llm": st.session_state.llm.model_name,
+                    "embed_llm": st.session_state.embed_llm,
+                    "llm": st.session_state.llm,
                     "filename": document_name,
                     "query": query,
                 }

@@ -19,7 +19,6 @@ from utils.app_view_models import (
     topics_from_pdf_compare,
 )
 
-from utils.common_functions import get_gpt_mini
 from langchain_core.prompts import PromptTemplate
 from fastapi.responses import StreamingResponse
 import os
@@ -43,7 +42,7 @@ from langchain_community.document_transformers import (
     LongContextReorder,
 )
 from langchain_core.output_parsers import PydanticOutputParser
-
+from models.models import LLMSource
 
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 config_file_path = os.path.join(root_dir, "config.yml")
@@ -58,16 +57,16 @@ index = os.path.join(root_dir, config["index"])
 vector_store = os.path.join(root_dir, config["vector_store"])
 upload_directory = os.path.join(root_dir, config["upload_directory"])
 
+
 # creating required folders
 os.makedirs(index, exist_ok=True)
 os.makedirs(vector_store, exist_ok=True)
 os.makedirs(upload_directory, exist_ok=True)
 
 ## variables
-llm = None
-embed_model = None
+llm = config["init"]["llm"]
+embed_model = config["init"]["embed_model"]
 retriever_dict = {}
-
 router = APIRouter()
 
 
@@ -87,6 +86,18 @@ def get_error_msg(err_msg, error):
 @inject
 def home():
     return ""
+
+
+@router.get("/init/")
+@inject
+async def init() -> dict[str, Any]:
+    output = {
+        "llm": llm,
+        "embed_model": embed_model,
+        "embeddings": embedding_llm_list,
+        "models": llm_list,
+    }
+    return output
 
 
 @router.post("/download_model/")
@@ -183,16 +194,8 @@ def process_documents(request: dict):
         ## get only the names of the uploaded files
         uploaded_files = request["uploaded_files"]
         embed_model_name = request["embed_model_name"]
-        embed_model = initialise_embed_llm(embed_llm=request["embed_llm"])
-        llm = initialise_llm(llm_name=request["llm"])
-
-        print("PROCESS DOCUMENTS >>>")
-        print(uploaded_files)
-        print(embed_model)
-        print(llm)
-        print(embed_model_name)
-        print("PROCESS DOCUMENTS >>>")
-
+        embed_model, _ = initialise_embed_llm(embed_llm=request["embed_llm"])
+        llm, _ = initialise_llm(llm_name=request["llm"])
         insight_json_dict = ingest_multi_doc(
             uploaded_files, embed_model, embed_model_name, upload_directory
         )
@@ -328,9 +331,6 @@ def get_retriever_dict(file_list, embed_model):
     for uploaded_file in file_list:
         path = rf"{os.path.join(upload_directory, uploaded_file)}"
         file_name = os.path.basename(path)
-        file_name_without_ext = os.path.splitext(file_name)[
-            0
-        ]  # Get filename without extension
         vec_path = os.path.join(vector_store, file_name, embed_model.model)
 
         ## creating jsons
@@ -370,8 +370,8 @@ def stream_insight(llm, retriever_dict, theme_name, subtheme_name, filename):
 @router.get("/get_theme_insights/")
 async def get_theme_insights(request: dict):
 
-    embed_model = initialise_embed_llm(embed_llm=request["embed_llm"])
-    llm = initialise_llm(llm_name=request["llm"])
+    embed_model, _ = initialise_embed_llm(embed_llm=request["embed_llm"])
+    llm, _ = initialise_llm(llm_name=request["llm"])
     retriever_dict = get_retriever_dict(
         file_list=request["file_list"], embed_model=embed_model
     )
@@ -389,8 +389,6 @@ async def get_theme_insights(request: dict):
 
 
 ## get comparison
-
-
 def extract_document_name(file_path):
     # Extract the base name of the file
     base_name = os.path.basename(file_path)
@@ -430,8 +428,8 @@ def get_context(retriever_dict, theme, sub_theme):
 @router.post("/get_comparison/")
 def get_detailed_comparison_chain1(request: dict):
     try:
-        embed_model = initialise_embed_llm(embed_llm=request["embed_llm"])
-        llm = initialise_llm(llm_name=request["llm"])
+        embed_model, _ = initialise_embed_llm(embed_llm=request["embed_llm"])
+        llm, _ = initialise_llm(llm_name=request["llm"])
         retriever_dict = get_retriever_dict(
             file_list=request["file_list"], embed_model=embed_model
         )
@@ -524,8 +522,8 @@ def create_chatbot_chain(retriever, llm, query):
 
 @router.get("/get_chat_response/")
 async def get_chat_response(request: dict):
-    embed_model = initialise_embed_llm(embed_llm=request["embed_llm"])
-    llm = initialise_llm(llm_name=request["llm"])
+    embed_model, _ = initialise_embed_llm(embed_llm=request["embed_llm"])
+    llm, _ = initialise_llm(llm_name=request["llm"])
     retriever_dict = get_retriever_dict(
         file_list=request["file_list"], embed_model=embed_model
     )

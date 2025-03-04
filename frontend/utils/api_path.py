@@ -8,6 +8,7 @@ class APIPaths:
 
     # post api
     api_url = "http://127.0.0.1:8000/"
+    init = api_url + "init/"
     download_model = api_url + "download_model/"
     save_documents = api_url + "save_documents/"
     process_document = api_url + "process_documents/"

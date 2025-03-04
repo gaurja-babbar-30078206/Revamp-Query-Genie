@@ -7,7 +7,7 @@ import pandas as pd
 from typing import List
 from langchain_core.output_parsers.json import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
-from models.models import DataFormat, DataItem, Theme, ComparisonOutput
+from models.models import DataFormat, Theme, ComparisonOutput, LLMSource
 
 # upload, create vector stores, save their retrievers, create get their jsons
 import os
@@ -57,7 +57,6 @@ from langchain_community.document_loaders import (
 )
 from utils.common_functions import get_gpt_mini, get_gpt_embedding
 from langchain_huggingface import HuggingFaceEmbeddings
-from models.models import LLMSource
 
 
 def blog(input):
@@ -125,32 +124,18 @@ def ingest_multi_doc(file_list, embed_model, embed_model_name, upload_path):
     for uploaded_file in file_list:
         path = rf"{os.path.join(upload_path, uploaded_file)}"
         file_name = os.path.basename(path)
-        file_name_without_ext = os.path.splitext(file_name)[
-            0
-        ]  # Get filename without extension
-
         ## creating jsons
         docs = return_documents(path)
 
         insight_json = get_topic_lists_from_pdf(
             doc_lst=docs, num_topics=10, words_per_topic=100
         )
-        print("Generated_Insights--->")
-        print(insight_json)
-        print("END")
-        insight_json_dict[file_name] = insight_json  # Store in dictionary
-        blog(f"Json created of ---> ")
-        blog(insight_json_dict)
 
-        print("EMBED MODEL >>>")
-        print(embed_model)
-        print("EMBED MODEL >>>")
+        insight_json_dict[file_name] = insight_json  # Store in dictionary
     return insight_json_dict
 
 
 ### Topic Modelling ###############
-
-
 def preprocess(text, stop_words):
     """
     Tokenizes and preprocesses the input text, removing stopwords and short
@@ -728,9 +713,12 @@ def initialise_embed_llm(embed_llm: str):
     ][0]
     print(f"Model name ---> {embed_model}")
     if embed_model["visible_name"] == "text-embedding-ada-002":
-        return get_gpt_embedding()
+        return get_gpt_embedding(), embed_llm
     else:
-        return HuggingFaceEmbeddings(model_name=embed_llm, show_progress=True)
+        return (
+            HuggingFaceEmbeddings(model_name=embed_llm, show_progress=True),
+            embed_llm,
+        )
 
 
 def initialise_llm(llm_name):
@@ -739,14 +727,17 @@ def initialise_llm(llm_name):
     model = llm["visible_name"]
     llm_source = llm["info"]["source"]
     if llm_source == LLMSource.openai:
-        return get_gpt_mini()
+        return get_gpt_mini(), model
     elif llm_source == LLMSource.ollama:
-        return ChatOllama(model=model, temperature=0)
+        return ChatOllama(model=model, temperature=0), model
     elif llm_source == LLMSource.chatgroq:
-        return ChatGroq(
-            model=model,
-            temperature=0,
-            max_tokens=None,
-            timeout=None,
-            max_retries=2,
+        return (
+            ChatGroq(
+                model=model,
+                temperature=0,
+                max_tokens=None,
+                timeout=None,
+                max_retries=2,
+            ),
+            model,
         )
