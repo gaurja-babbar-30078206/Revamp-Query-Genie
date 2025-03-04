@@ -7,7 +7,8 @@ class APIPaths:
     # get api
 
     # post api
-    api_url = "http://127.0.0.1:8000/"
+    # api_url = "http://192.168.74.165:8000/"
+    api_url="http://host.docker.internal:8000/"
     init = api_url + "init/"
     download_model = api_url + "download_model/"
     save_documents = api_url + "save_documents/"

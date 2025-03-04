@@ -3,7 +3,7 @@ import yaml
 from dotenv import load_dotenv, find_dotenv
 from langchain_openai import AzureChatOpenAI
 
-root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 config_file_path = os.path.join(root_dir, "config.yml")
 
 ## loading config

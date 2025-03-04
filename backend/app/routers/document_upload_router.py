@@ -44,7 +44,9 @@ from langchain_community.document_transformers import (
 from langchain_core.output_parsers import PydanticOutputParser
 from models.models import LLMSource
 
-root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", root_dir, os.listdir())
 config_file_path = os.path.join(root_dir, "config.yml")
 
 ## loading config
