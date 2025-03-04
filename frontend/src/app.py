@@ -1,9 +1,10 @@
 import sys
 import json
 import asyncio
+import streamlit as st
 
 sys.path.append(".")
-import streamlit as st
+
 from app_models import DataType, LLMSource, Domain
 from app_side_bar_view_model import (
     get_embed_llm_list,
