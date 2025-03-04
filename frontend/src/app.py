@@ -283,25 +283,9 @@ with tab3:
                 response = ""
                 with st.chat_message("assistant"):
                     message_placeholder = st.empty()
-                    # full_response = ""
-
-                    # Use the correct input key "query" (or adjust your chain to accept "question")
-                    # st.write(get_chat_response(input=input))
                     st.write(get_chat_response(input=input))
-                    # for chunk in get_chat_response(input=input):
-                    #     print(chunk)
 
-                    # for response in st.session_state.chatbot_chain.stream(
-                    #     {"query": query}
-                    # ):
-                    #     # print("Response--------->",response,"<---------")
-                    # full_response += response
-                    # message_placeholder.markdown(full_response + " ")
                 message_placeholder.markdown(response)
-
-                # st.session_state.chat_history.append(
-                #     {"role": "assistant", "content": full_response}
-                # )
             else:  # Handle empty input
                 st.warning("Please enter a query.")  # More user-friendly message
     else:

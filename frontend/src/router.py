@@ -5,8 +5,6 @@ from typing import List
 
 # upload, create vector stores, save their retrievers, create get their jsons
 
-# post
-
 
 async def init():
     """API to initialise the app"""
