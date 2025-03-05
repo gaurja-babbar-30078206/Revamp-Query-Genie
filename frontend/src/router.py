@@ -2,19 +2,20 @@ import httpx
 from fastapi import UploadFile, File
 from utils.api_path import APIPaths
 from typing import List
+import requests
 
 # upload, create vector stores, save their retrievers, create get their jsons
 
 
-async def init():
+def init():
     """API to initialise the app"""
-    async with httpx.AsyncClient(timeout=6000) as client:
-        response = await client.get(url=APIPaths.init)
+    # async with httpx.AsyncClient(timeout=6000) as client:
+    response = requests.get(url=APIPaths.init)
 
-        print("INIT RESPONSE >>")
-        print(response.json())
-        print("INIT RESPONSE >>")
-        return response.json()
+    print("INIT RESPONSE >>")
+    print(response.json())
+    print("INIT RESPONSE >>")
+    return response.json()
 
 
 async def download_model(input_data: dict):

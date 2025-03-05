@@ -8,8 +8,14 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY .env .
+RUN pip install pdfplumber
+RUN pip install tabulate
 COPY app/ .
+
+ARG env
+COPY ./${env}.env ./.env  
+
+RUN python -m nltk.downloader punkt stopwords
 
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host=0.0.0.0", "--port=8000"]

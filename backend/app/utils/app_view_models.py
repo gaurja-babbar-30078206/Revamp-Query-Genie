@@ -726,6 +726,8 @@ def initialise_llm(llm_name):
     model = llm["visible_name"]
     llm_source = llm["info"]["source"]
     
+    print("!!!!!!! llm names initialised", llm)
+    
     if llm_source == LLMSource.openai.value:
         return get_gpt_mini(), model
     elif llm_source == LLMSource.ollama.value:

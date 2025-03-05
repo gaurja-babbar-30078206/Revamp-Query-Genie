@@ -1,5 +1,9 @@
 # FastAPI Endpoint
 
+from dotenv import load_dotenv, find_dotenv
+import os
+
+load_dotenv(find_dotenv())
 
 class APIPaths:
     # api endpoints
@@ -8,7 +12,9 @@ class APIPaths:
 
     # post api
     # api_url = "http://192.168.74.165:8000/"
-    api_url="http://host.docker.internal:8000/"
+    api_url=os.environ["backend_url"]
+    # api_url="http://localhost:8000/"
+    print(">>>>>>>>>>>>>>>>>>>", api_url)
     init = api_url + "init/"
     download_model = api_url + "download_model/"
     save_documents = api_url + "save_documents/"
