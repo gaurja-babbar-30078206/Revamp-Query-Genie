@@ -1,20 +1,13 @@
-# FastAPI Endpoint
-
 from dotenv import load_dotenv, find_dotenv
 import os
 
 load_dotenv(find_dotenv())
 
 class APIPaths:
-    # api endpoints
+    api_url = os.environ.get("backend_url", "").rstrip("/") + "/"  # ✅ Ensure trailing slash
+    print(">>>>>>>>>>>>>>>>>>> API URL:", api_url)
 
-    # get api
-
-    # post api
-    # api_url = "http://192.168.74.165:8000/"
-    api_url=os.environ["backend_url"]
-    # api_url="http://localhost:8000/"
-    print(">>>>>>>>>>>>>>>>>>>", api_url)
+    # Define API paths
     init = api_url + "init/"
     download_model = api_url + "download_model/"
     save_documents = api_url + "save_documents/"

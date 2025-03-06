@@ -148,13 +148,14 @@ def main_app():
 
     # init api which will fill the lists of llm and emb
 
-    init_response = init()
-    print(init_response)
-    st.session_state.llm = init_response["llm"]
-    st.session_state.embed_llm = init_response["embed_model"]
-    st.session_state.em_llm_list = init_response["embeddings"]
-    st.session_state.llm_list = init_response["models"]
-    # st.session_state.init = True
+    if "load_model" not in st.session_state:
+        print(st.session_state.get("load_model", "load_model: None"))
+        init_response = init()
+        st.session_state.llm = init_response["llm"]
+        st.session_state.embed_llm = init_response["embed_model"]
+        st.session_state.em_llm_list = init_response["embeddings"]
+        st.session_state.llm_list = init_response["models"]
+        st.session_state.load_model = True
         
     # print(",,,,,,,,,,,,,,,,,,,,,,",init_response)
 
