@@ -37,21 +37,19 @@ def login_page():
         config['cookie']['expiry_days']
     )
     
+    # try:
+    #     authenticator.login()
+
     try:
-        authenticator.login()
+        authenticator.experimental_guest_login('Login with Microsoft',
+                                                provider='microsoft',
+                                                oauth2=config['oauth2'])  # Microsoft login
     except Exception as e:
         st.error(e)
 
-    # try:
-    #     authenticator.experimental_guest_login('Login with Microsoft',
-    #                                             provider='microsoft',
-    #                                             oauth2=config['oauth2'])  # Microsoft login
-    # except Exception as e:
-    #     st.error(e)
-
     if st.session_state['authentication_status']:
         # Successful login – redirect to main app
-        st.experimental_rerun()  # Force page reload to go to the main app
+        st.rerun()  # Force page reload to go to the main app
         authenticator.logout()
         st.write(f'Welcome *{st.session_state["name"]}*')
         print("here")

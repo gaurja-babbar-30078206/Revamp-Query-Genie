@@ -1,3 +1,5 @@
-*.pyc
+*.py[cod]
 *.yml
 *.env
+
+__pycache__/

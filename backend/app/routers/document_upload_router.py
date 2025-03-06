@@ -87,8 +87,11 @@ def get_error_msg(err_msg, error):
 @router.get("/")
 @inject
 def home():
-    return ""
+    return {"message": "API is running"}
 
+@router.get("/test")
+def test():
+    return {"message": "Test successful"}
 
 @router.get("/init/")
 @inject
