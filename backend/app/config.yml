@@ -1,0 +1,8 @@
+init:
+  llm: gpt-4o-mini
+  embed_model: text-embedding-ada-002
+root-dir: ./backend
+index: app/index
+vector_store: app/index/vector_store
+json_store: app/index/json_store
+upload_directory: app/index/uploads
